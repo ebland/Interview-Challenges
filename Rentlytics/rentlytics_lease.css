@@ -1,0 +1,59 @@
+html,
+body,
+#wrapper {
+  height: 100%;
+  margin: 0px;
+  width: 100%;
+}
+.chart {
+  font: 12px Arial, sans-serif;
+}
+.axis path,
+.axis line {
+  fill: none;
+  shape-rendering: crispEdges;
+  stroke: #000;
+}
+
+$row_height: 50px
+$col_width: 100px
+$x_axis_width: 100px
+$axis_grey: #EEE
+$border_grey: #CCC
+
+.graph-container
+  height: 300px
+  width: 600px
+
+.x-axis
+  width: $x_axis_width
+  height: 100%
+  background-color: $axis_grey
+
+.x-label
+  height: $row_height
+  line-height: $row_height
+  width: 100%
+  text-align: center
+  font-size: 30px
+  border-bottom: 1px solid $border_grey
+
+.y-axis
+  display: table
+  table-layout: fixed
+  height: $row_height
+  width: 100%
+  padding-left: $x_axis_width
+  background-color: $axis_grey
+
+.y-label
+  display: table-cell
+  height: $row_height
+  line-height: $row_height
+  font-size: 30px
+
+.bar
+  height: $row_height
+  padding: 5px 0
+  box-sizing: border-box
+  background-color: #66C

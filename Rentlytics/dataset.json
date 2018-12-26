@@ -1,0 +1,32 @@
+[
+    {
+        "unitName": "A101",
+        "beginTimestamp": 1328256000000,
+        "endTimestamp": 1359978400000,
+        "rent": 1200
+    },
+    {
+        "unitName": "B201",
+        "beginTimestamp": 1298966400000,
+        "endTimestamp": 1398966400000,
+        "rent": 1300
+    },
+    {
+        "unitName": "A301",
+        "beginTimestamp": 1275721200000,
+        "endTimestamp": 1298966400000,
+        "rent": 1500
+    },
+    {
+        "unitName": "A101",
+        "beginTimestamp": 1298966400000,
+        "endTimestamp": 1310664000000,
+        "rent": 1100
+    },
+    {
+        "unitName": "A301",
+        "beginTimestamp": 1357878400000,
+        "endTimestamp": 1369878400000,
+        "rent": 2000
+    }
+]

@@ -1,0 +1,3 @@
+function queryIPInfo(IP){
+    
+}

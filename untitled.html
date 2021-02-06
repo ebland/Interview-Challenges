@@ -1,0 +1,177 @@
+<?php
+class Canceldrop
+{
+    public function Process($access_token)
+    {
+        ini_set('memory_limit', '-1');
+        set_time_limit(0);
+        date_default_timezone_set('America/Los_Angeles');
+        global $wpdb;
+        $curl = curl_init();
+        
+        
+        $to_date=date('Y-m-d', strtotime($date. ' - 5 days'));
+        
+        $current_time = date("H:i:s");
+        $from_time = "18:00:00";
+        $to_time = "08:00:00";
+        
+        if ($this->TimeIsBetweenTwoTimes($current_time, $from_time, $to_time)):
+            echo 'Have a good night!';exit;
+        else:
+        
+            curl_setopt_array($curl, array(
+              CURLOPT_URL => "https://oci1.a2000cloud.com/ords/cr/api/viewers/view/vr_order_hd",
+              CURLOPT_RETURNTRANSFER => true,
+              CURLOPT_ENCODING => "",
+              CURLOPT_MAXREDIRS => 10,
+              CURLOPT_TIMEOUT => 0,
+              CURLOPT_FOLLOWLOCATION => true,
+              CURLOPT_SSL_VERIFYPEER=>false,
+              CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+              CURLOPT_CUSTOMREQUEST => "POST",
+               CURLOPT_POSTFIELDS =>"\r\n{ \"COLUMNS\": \"CTRL_NO, CUSTOMER, CUST_NAME, ORDER_NO, STORE, ORDER_DATE, START_DATE, CANCEL_DATE, EVENT_DATE, BOOK_DATE, CORP, DIV, BOOK_SEASON, DC_NO, CUST_DEPT, REGION, STATUS, ORDER_TRACK, ORDER_TRACK_DATE, OPEN_QTY, OPEN_EXTENSION, OPEN_VALUE, PICK_QTY, PICK_EXTENSION, PICK_VALUE, BOOK_QTY, BOOK_EXTENSION, BOOK_VALUE, SHIP_QTY, SHIP_EXTENSION, SHIP_VALUE, CANCEL_QTY, CANCEL_EXTENSION, CANCEL_VALUE, CANCEL_CODE, CANCELED_ON_DATE, REP_1, REP_2, REP_3, TERRITORY, TERMS, TERMS_DESCR, PREPAY_AMT, DISC, DISC_RATE, FACTOR, FACTOR_CUSTOMER, CREDIT, APPR_NO, FACTOR_EDI, FACTOR_EDI_QUEUED, FACTOR_EDI_SENT, FACTOR_EDI_REQ_NO, CURRENCY, EXCHANGE_RATE, SHIP_VIA, FOB_POINT, PRIORITY, REORDER, DEF_WH, REF_ART_ID, ST_NAME, ST_ADDR_1, ST_ADDR_2, ST_CITY, ST_STATE, ST_POSTAL, ST_COUNTRY, DROP_SHIP, SHIP_TO_REP, PROMO_CODE, PRICE_LIST_ID, ORDER_REF1, ORDER_REF2, ORDER_REF3, ORDER_REF4, ORDER_REF5, ORDER_CONTROLLER, ORDER_APPR_STATUS, ORDER_TYPE, ORDER_ALIAS, PROJECT_ID, ORDER_HOLD, ORDER_MODE, SHIP_TYPE, FILL_RULE, FIRST_COST_RULE, REGISTER, ENTRY_DATE, ENTERED_BY, MODIFY_DATE, MODIFIED_BY, EDI_ORDER, EDI_MARKFOR, CONTRACT_ORDER_NO, SUMMARY_ORDER_NO, ORDER_EVENT_REF, EDI_MERCHANT, CUST_TYPE, CUST_REF1, CUST_REF2, MASTER_CUST, ST_REF1, ST_REF2, SHIPPING, SURCHARGE, SERVICES, SALES_TAX1, SALES_TAX2, SALES_TAXL, TAX_AUTH, TAX_EXEMPT, FIXED_DISC, DISCOUNT, ORDER_TOTAL, ORDER_TRACK_DUE, ORDER_TRACK_LATE, ORDER_TRACK_CONTROL, ORDER_TRACK_REF, ACK_PRINTED, PO_ACK_PRINTED, EDI_RVPO, EDI_RVPO_QUEUED, EDI_RVPO_SENT\", \"FILTER\": \"CANCEL_CODE = 'DROP' AND  CANCEL_ON_DATE >=to_date('".$to_date." 00:00:00' ,'YYYY-MM-DD HH24:MI:SS')\", \"SORT\": \"CANCEL_ON_DATE DESC\" }\r\n\r\n",
+              CURLOPT_HTTPHEADER => array(
+                "Content-Type: application/json",
+                "Authorization: Bearer ".$access_token
+              ),
+            ));
+            
+
+
+            $response = curl_exec($curl);
+
+            curl_close($curl);
+            $parsed_data=$this->ParseJsonDecode($response);
+            $trans_list=$parsed_data->VR_ORDER_HD;
+            
+            foreach($trans_list as $ts):
+                $metaparam=$this->ChkSms($ts->CTRL_NO);
+                if($metaparam==""):
+                    $this->SendCanceldropProcessing($ts);
+                    //break;
+                endif;
+            endforeach;
+        endif;
+        
+        exit;
+    }
+    public function TimeIsBetweenTwoTimes($from, $till, $input)
+    {
+        $f = DateTime::createFromFormat('H:i
+:s
+', $from);
+        $t = DateTime::createFromFormat('H:i
+:s
+', $till);
+        $i = DateTime::createFromFormat('H:i
+:s
+', $input);
+        if ($f > $t) $t->modify('+1 day');
+        return ($f <= $i && $i <= $t) || ($f <= $i->modify('+1 day') && $i <= $t);
+    } 
+    public function ParseJsonDecode($contents)
+    {
+        $contents=str_replace("Content-type: application/json
+Status: 200 Success","",$contents);
+
+        $contents=str_replace("\u","",$contents);
+        $contents=str_replace("\r","",$contents);
+        $contents=str_replace("\n","",$contents);
+        $contents=str_replace("\/","",$contents);
+        $contents = preg_replace('/( +):/i', '"\1":', $contents);
+        $parsed_data=json_decode($contents); 
+        return $parsed_data;
+    }
+    public function ProcessJsonDecode($contents)
+    {
+        $contents=str_replace("Content-type: application/json
+Status: 200 Success","",$contents);
+
+        $contents=str_replace("\u","",$contents);
+        $contents=str_replace("\r","",$contents);
+        $contents=str_replace("\n","",$contents);
+        $contents=str_replace("\/","",$contents);
+        $contents = preg_replace('/( +):/i', '"\1":', $contents);
+        $parsed_data=json_decode($contents); 
+        return $parsed_data;
+    }
+    public function SendCanceldropProcessing($info)
+    {
+        global $wpdb;
+
+        $site_name = get_bloginfo( 'name' );
+        
+        //$order_id=$this->get_post_id_by_meta_key_and_value('ctrl_no', $info->CTRL_NO); 
+// // Your order for STYLE DESCR XXX has been cancelled due to this style not being produced. 
+        $msgtocustomer =$site_name." cancelled your order due to this style ".$info->STYLE." not being produced.";
+        
+        $msgtoadmin="Cancelled order for ".$info->CTRL_NO.". The style ".$info->STYLE." is not being produced. SMS notification sent to customer successfully.";
+
+
+        // $order_phone = $woocommerce->customer->billing['billing_phone'];
+        $order_phone=$info->MOBILE_CONTACT;
+        $admin_phone=get_option('admin_phone_number');
+        
+        //$order_phone="+15015807383";
+        //$order_phone="+918489313939";
+        //$admin_phone="+919626345457";
+        
+        $sid = get_option('msg_api_key');
+                    $token = get_option('msg_token');
+        send_twilio_text_msg(
+             $sid,
+             $token,
+             get_option('sender_phone_no'),
+             $order_phone,
+             $msgtocustomer
+          );
+          
+         send_twilio_text_msg(
+                         $sid,
+                         $token,
+                         get_option('sender_phone_no'),
+                         $admin_phone,
+                         $msgtoadmin
+                      );          
+                  
+        $ins_query="insert into `wp_a2000_sms`(`ctrl_no`,`meta_value`,`last_updated`)values('".$info->CTRL_NO."','".json_encode($info)."','".date('Y-m-d H:i:s')."')";
+        $wpdb->query($ins_query);
+        
+        //print"<pre>";print_r($info);print"</pre>";
+        
+        
+    }
+    public function ChkSms($ctrl_no) 
+    {
+        global $wpdb; 
+        $meta = $wpdb->get_results("SELECT ctrl_no FROM `wp_a2000_sms` WHERE ctrl_no='".$wpdb->escape($ctrl_no)."'");
+        
+        if (is_array($meta) && !empty($meta) && isset($meta[0])) {
+            $meta = $meta[0];
+        }       
+        if (is_object($meta)) {
+            return $meta->ctrl_no;
+        }
+        else {
+            return false;
+        }
+    }
+    public function get_post_id_by_meta_key_and_value($key, $value) 
+    {
+        global $wpdb; 
+        $meta = $wpdb->get_results("SELECT post_id FROM `".$wpdb->postmeta."` WHERE meta_key='".$wpdb->escape($key)."' AND meta_value='".$wpdb->escape($value)."'");
+        
+        if (is_array($meta) && !empty($meta) && isset($meta[0])) {
+            $meta = $meta[0];
+        }       
+        if (is_object($meta)) {
+            return $meta->post_id;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+?>
